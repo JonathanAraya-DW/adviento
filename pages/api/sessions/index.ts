@@ -1,18 +1,17 @@
 import crypto from 'crypto';
 
-import { PrismaClient } from '@prisma/client';
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // Handler principal
 /**
  * API handler for managing sessions.
- * 
+ *
  * Supports two operations:
  * - GET: Retrieves all sessions for an authenticated user
  * - POST: Creates a new session
- * 
+ *
  * @param req - The Next.js API request object
  * @param req.query.userId - User ID for GET requests
  * @param req.body - Request body for POST requests
@@ -22,10 +21,10 @@ const prisma = new PrismaClient();
  * @param req.body.maxGiftValue - Maximum gift value allowed
  * @param req.body.userId - User ID of the session owner
  * @param res - The Next.js API response object
- * 
+ *
  * @returns For GET: Array of sessions with their participants
  * @returns For POST: Newly created session object
- * 
+ *
  * @throws 400 - When userId is missing
  * @throws 405 - When using unsupported HTTP methods
  * @throws 500 - When database operations fail
@@ -39,7 +38,15 @@ export default async function handler(
     const { userId } = req.query;
 
     if (!userId) {
-      return res.status(400).json({ error: 'Falta el userId en la consulta' });
+      return res.status(400).json({ error: 'Falta el userId en la solicitud' });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: String(userId) },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no existe' });
     }
 
     try {
@@ -54,6 +61,12 @@ export default async function handler(
     }
   } else if (req.method === 'POST') {
     const { name, password, minGiftValue, maxGiftValue, userId } = req.body;
+
+    if (!name) {
+      return res.status(400).json({
+        error: 'Falta el nombre en el cuerpo de la solicitud',
+      });
+    }
 
     if (!userId) {
       return res
