@@ -1,0 +1,42 @@
+// 1. Definición del datasource
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Usa la variable de entorno
+}
+
+// 2. Definición del cliente Prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 3. Tus modelos (tablas)
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  sessions  Session[]
+}
+
+model Session {
+  id          String      @id @default(cuid())
+  name        String
+  password    String?      // Encriptada, puede ser null
+  minGiftValue Int?
+  maxGiftValue Int?
+  status      String      @default("open")
+  createdAt   DateTime    @default(now())
+  link        String      // Enlace único de la sesión
+  ownerId     String
+  owner       User        @relation(fields: [ownerId], references: [id])
+  participants Participant[]
+}
+
+model Participant {
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  preferences String?  // Texto o JSON
+  sessionId   String
+  assignedTo  String?  // ID del amigo secreto asignado
+  Session     Session  @relation(fields: [sessionId], references: [id])
+}
